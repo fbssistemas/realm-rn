@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import DeviceInfo from 'react-native-device-info';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 
-import Seller, { ISeller } from './models/seller';
-import Company, { ICompany } from './models/company';
+import { ISeller } from './models/seller';
+
+import SellerView from './components/SellerView';
 
 import api from './services/api'
 import getRealm from './services/realm'
 
 const App: React.FC = () => {
   const [sellers, setSellers] = useState<ISeller[]>([])
-  const [companies, setCompanies] = useState<ICompany[]>([])
   const uid = DeviceInfo.getUniqueId();
 
   const getData = async () => {
-    console.log('getData')
+    console.log('getData2')
     try {
       const response = await api.post('auth', { uid }, { timeout: 5000 })
 
@@ -27,7 +27,7 @@ const App: React.FC = () => {
   const setData = async (data: any) => {
     const { seller, companies } = data
 
-    console.log('setData')
+    console.log('setData2')
     try {
       const realm = await getRealm()
 
@@ -38,6 +38,15 @@ const App: React.FC = () => {
 
         let companyList = realm.objects('Company')
         realm.delete(companyList)
+
+        let commercialList = realm.objects('Commercial')
+        realm.delete(commercialList)
+
+        let priceList = realm.objects('Price')
+        realm.delete(priceList)
+
+        let productList = realm.objects('Product')
+        realm.delete(productList)
 
         const newSeller = realm.create('Seller', {
           id: seller.id,
@@ -58,18 +67,48 @@ const App: React.FC = () => {
             id: company.id,
             name: company.name
           }
-          newSeller.companies.push(companyData)
-          // realm.create('Company', companyData)
-        })
+          const newCompany = realm.create('Company', companyData)
+          newSeller.companies.push(newCompany);
 
+          company.commercials.forEach((commercial: any) => {
+            let commercialData = {
+              id: commercial.id,
+              name: commercial.name
+            }
+            const newCommercial = realm.create('Commercial', commercialData)
+            newCompany.commercials.push(newCommercial)
+          })
+
+          company.prices.forEach((price: any) => {
+            let priceData = {
+              id: price.id,
+              group_id: price.group_id,
+              code: price.code,
+              name: price.name
+            }
+            const newPrice = realm.create('Price', priceData)
+            newCompany.prices.push(newPrice);
+
+            price.products.forEach((product: any) => {
+              let products = realm.objects('Product').sorted('id', true);
+              let productData = {
+                id: products.length ? products[0].id + 1 : 1,
+                product_id: product.id,
+                name: product.name,
+                qtd_start: product.qtd_start,
+                qtd_end: product.qtd_end,
+                price: parseFloat(product.price)
+              }
+              const newProduct = realm.create('Product', productData)
+              newPrice.products.push(newProduct)
+            })
+          })        
+        })
       })
 
       sellerList = realm.objects('Seller')
       setSellers(sellerList);
-
-      companyList = realm.objects('Company')
-      setCompanies(companyList)
-
+      console.log('complete')
       realm.close()
     } catch (err) {
       console.error(err)
@@ -85,9 +124,6 @@ const App: React.FC = () => {
       let sellerList = realm.objects('Seller')
       setSellers(sellerList)
 
-      let companyList = realm.objects('Company')
-      setCompanies(companyList)
-
       realm.close()
     } catch (err) {
       console.error(err)
@@ -99,14 +135,20 @@ const App: React.FC = () => {
   }, [])
 
   return (<View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#06C' }}>
-    <Text style={{ fontSize: 40, color: '#fff' }}>FBS</Text>
-    <TouchableOpacity onPress={() => getData()} style={{ marginTop: 20, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5, backgroundColor: '#fff' }}>
-      <Text>Click Me</Text>
-    </TouchableOpacity>
-    <Text style={{ marginTop: 15, marginBottom: 15, fontSize: 20, fontWeight: 'bold', color: '#fff' }}>{uid}</Text>
-    {sellers.map(seller => (
-      <Text style={{ fontSize: 18, color: '#fff' }} key={seller.id}>{seller.name}</Text>
-    ))}
+    <View>
+      <Text style={{ fontSize: 40, color: '#fff' }}>FBS</Text>
+      <TouchableOpacity onPress={() => getData()} style={{ marginTop: 20, paddingVertical: 10, paddingHorizontal: 20, borderRadius: 5, backgroundColor: '#fff' }}>
+        <Text>Click Me</Text>
+      </TouchableOpacity>
+      <Text style={{ marginTop: 15, marginBottom: 15, fontSize: 20, fontWeight: 'bold', color: '#fff' }}>{uid}</Text>
+    </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }}>
+      <ScrollView>
+        {sellers.map(seller => (
+          <SellerView key={seller.id} seller={seller} />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
   </View>);
 }
 
