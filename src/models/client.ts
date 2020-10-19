@@ -29,11 +29,11 @@ class Client implements IClient {
       company: 'string',
       name: 'string',
       cpf_cnpj: 'string',
-      rg_ie: 'string',
-      commercial: {
+      rg_ie: { type: 'string', optional: true },
+      daily: {
         type: 'linkingObjects',
-        objectType: 'Commercial',
-        property: 'clients',
+        objectType: 'Daily',
+        property: 'client',
       },
     },
   }

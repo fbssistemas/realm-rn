@@ -1,13 +1,16 @@
 import Realm from 'realm';
+import Daily from './daily';
 
 export interface ICommercial {
   id: number;
   name: string;
+  dailies: Realm.List<Daily>
 }
 
 class Commercial implements ICommercial {
   id: number;
   name: string;
+  dailies: Realm.List<Daily>
 
   public static schema: Realm.ObjectSchema = {
     name: 'Commercial',
@@ -15,6 +18,7 @@ class Commercial implements ICommercial {
     properties: {
       id: 'int',
       name: 'string',
+      dailies: 'Daily[]',
       company: {
         type: 'linkingObjects',
         objectType: 'Company',
