@@ -9,9 +9,16 @@ const synchronize = async (data: any) => {
   try {    
     realm = await getRealm();
     
-    await clearAllData();
+    await clearAllData('Address');
+    await clearAllData('Client');
+    await clearAllData('Daily');
+    await clearAllData('Commercial');
+    await clearAllData('Product');
+    await clearAllData('Price');
+    await clearAllData('Company');
+    await clearAllData('Seller');
 
-    await setSellerData({
+    let newSeller = await setSellerData({
       id: seller.id,
       group_id: seller.group_id,
       code: seller.code,
@@ -26,19 +33,19 @@ const synchronize = async (data: any) => {
     });
 
     for (let company of companies) {
-      await setCompanyData(seller.id, {
+      let newCompany = await setCompanyData(newSeller, {
         id: company.id,
         name: company.name
       });
 
       for (let commercial of company.commercials) {
-        await setCommercialData(company.id, {
+        let newCommercial = await setCommercialData(newCompany, {
           id: commercial.id,
           name: commercial.name
-        })
+        });
 
         for (let daily of commercial.dailies) {
-          await setDailyData(commercial.id, {
+          let newDaily = await setDailyData(newCommercial, {
             id: daily.id,
             commercial_id: daily.commercial_id,
             client_id: daily.client_id,
@@ -49,7 +56,7 @@ const synchronize = async (data: any) => {
             obs: daily.obs,
           });
 
-          await setClientData(daily.id, {
+          let newClient = await setClientData(newDaily, {
             id: daily.client.id,
             group_id: daily.client.group_id,
             code: daily.client.code,
@@ -59,7 +66,7 @@ const synchronize = async (data: any) => {
             rg_ie: daily.client.rg_ie
           })
 
-          await setAddressData(daily.id, {
+          let newAddress = await setAddressData(newDaily, {
             id: daily.address.id,
             client_id: daily.address.client_id,
             type: daily.address.type, 
@@ -73,12 +80,12 @@ const synchronize = async (data: any) => {
             contact: daily.address.contact,
             phone: daily.address.phone,
             cell: daily.address.cell
-          })
+          });
         }
       }
 
       for (let price of company.prices) {
-        await setPriceData(company.id, {
+        let newPrice = await setPriceData(newCompany, {
           id: price.id,
           group_id: price.group_id,
           code: price.code,
@@ -86,7 +93,7 @@ const synchronize = async (data: any) => {
         });
 
         for (let product of price.products) {
-          await setProductData( price.id, {
+          let newProduct = await setProductData(newPrice, {
             product_id: product.id,
             name: product.name,
             qtd_start: product.qtd_start,
@@ -100,46 +107,26 @@ const synchronize = async (data: any) => {
     console.log('complete synchronize');
     const end = new Date().getTime();
     console.log(end - start);
+    realm.close()
   } catch (err) {
     console.log('error', err)
   }
 }
 
-const clearAllData = () => {
+const clearAllData = (schemaName: string) => {
   return new Promise(async (resolve, reject) => {
     try {
       const update = () => {
         realm.removeAllListeners();
-        console.log('clear all data');
+        console.log(`clear all data of ${schemaName}`);
         resolve('');
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
-        let clientList = realm.objects('Client')
-        realm.delete(clientList)
-
-        let addressList = realm.objects('Client')
-        realm.delete(addressList)
-
-        let dailyList = realm.objects('Daily')
-        realm.delete(dailyList)
-
-        let commercialList = realm.objects('Commercial')
-        realm.delete(commercialList)
-
-        let productList = realm.objects('Product')
-        realm.delete(productList)
-
-        let priceList = realm.objects('Price')
-        realm.delete(priceList)
-
-        let companyList = realm.objects('Company')
-        realm.delete(companyList)
-
-        let sellerList = realm.objects('Seller')
-        realm.delete(sellerList)
-      })        
+        let list = realm.objects(schemaName)
+        realm.delete(list)
+      })   
     } catch (err) {
       reject(err);
     }
@@ -153,7 +140,7 @@ const setSellerData = (data: {}) => {
       const update = () => {
         realm.removeAllListeners();
         console.log('set seller');
-        resolve('');
+        resolve(newSeller);
       }
       realm.addListener('change', update);
 
@@ -166,21 +153,22 @@ const setSellerData = (data: {}) => {
   })
 }
 
-const setCompanyData = (sellerId: any, data: {}) => {
+const setCompanyData = (seller: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
     let newCompany: any;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set company');
-        resolve('');
+        resolve(newCompany);
       }
       realm.addListener('change', update);
 
       realm.write(() => {
-        let newSeller = realm.objects('Seller').filtered(`id = ${sellerId}`)[0];
+        //let newSeller = realm.objects('Seller').filtered(`id = ${sellerId}`)[0];
         newCompany = realm.create('Company', data);  
-        newSeller.companies.push(newCompany);
+        //newSeller.companies.push(newCompany);
+        seller.companies.push(newCompany);
       })
     } catch (err) {
       reject(err);
@@ -188,20 +176,22 @@ const setCompanyData = (sellerId: any, data: {}) => {
   })
 }
 
-const setCommercialData = (companyId: any, data: {}) => {
+const setCommercialData = (company: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
+    let newCommercial;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set commercial');
-        resolve('');
+        resolve(newCommercial);
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
-        let newCompany = realm.objects('Company').filtered(`id = ${companyId}`)[0];
-        const newCommercial = realm.create('Commercial', data);
-        newCompany.commercials.push(newCommercial);
+        // let newCompany = realm.objects('Company').filtered(`id = ${companyId}`)[0];
+        newCommercial = realm.create('Commercial', data);
+        company.commercials.push(newCommercial);
+        // newCompany.commercials.push(newCommercial);
       })
     } catch (err) {
       reject(err);
@@ -209,20 +199,22 @@ const setCommercialData = (companyId: any, data: {}) => {
   })    
 }
 
-const setPriceData = (companyId: any, data: {}) => {
+const setPriceData = (company: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
+    let newPrice;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set price');
-        resolve('');
+        resolve(newPrice);
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
-        let newCompany = realm.objects('Company').filtered(`id = ${companyId}`)[0];
-        const newPrice = realm.create('Price', data)
-        newCompany.prices.push(newPrice);
+        // let newCompany = realm.objects('Company').filtered(`id = ${companyId}`)[0];
+        newPrice = realm.create('Price', data)
+        company.prices.push(newPrice);
+        // newCompany.prices.push(newPrice);
       })
     } catch (err) {
       reject(err);
@@ -230,22 +222,24 @@ const setPriceData = (companyId: any, data: {}) => {
   })    
 }
 
-const setProductData = (priceId: any, data: {}) => {
+const setProductData = (price: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
+    let newProduct;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set product');
-        resolve('');
+        resolve(newProduct);
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
+        // let newPrice = realm.objects('Price').filtered(`id = ${priceId}`)[0];
         let products = realm.objects('Product').sorted('id', true);
-        let newPrice = realm.objects('Price').filtered(`id = ${priceId}`)[0];
         data.id = products.length ? products[0].id + 1 : 1;
-        const newProduct = realm.create('Product', data)
-        newPrice.products.push(newProduct);
+        newProduct = realm.create('Product', data)
+        price.products.push(newProduct);
+        // newPrice.products.push(newProduct);
       })
     } catch (err) {
       reject(err);
@@ -253,20 +247,22 @@ const setProductData = (priceId: any, data: {}) => {
   })    
 }
 
-const setDailyData = (commercialId: any, data: {}) => {
+const setDailyData = (commercial: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
+    let newDaily;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set daily');
-        resolve('');
+        resolve(newDaily);
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
-        let newCommercial = realm.objects('Commercial').filtered(`id = ${commercialId}`)[0];
-        const newDaily = realm.create('Daily', data)
-        newCommercial.dailies.push(newDaily);
+        // let newCommercial = realm.objects('Commercial').filtered(`id = ${commercialId}`)[0];
+        newDaily = realm.create('Daily', data)
+        commercial.dailies.push(newDaily);
+        // newCommercial.dailies.push(newDaily);
       })
     } catch (err) {
       reject(err);
@@ -274,20 +270,22 @@ const setDailyData = (commercialId: any, data: {}) => {
   })    
 }
 
-const setClientData = (dailyId: any, data: {}) => {
+const setClientData = (daily: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
+    let newClient;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set client');
-        resolve('');
+        resolve(newClient);
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
-        let newDaily = realm.objects('Daily').filtered(`id = ${dailyId}`)[0];
-        const newClient = realm.create('Client', data)
-        newDaily.client = newClient;
+        // let newDaily = realm.objects('Daily').filtered(`id = ${dailyId}`)[0];
+        newClient = realm.create('Client', data)
+        daily.client = newClient;
+        // newDaily.client = newClient;
       })
     } catch (err) {
       reject(err);
@@ -295,20 +293,22 @@ const setClientData = (dailyId: any, data: {}) => {
   })    
 }
 
-const setAddressData = (dailyId: any, data: {}) => {
+const setAddressData = (daily: any, data: {}) => {
   return new Promise(async (resolve, reject) => {
+    let newAddress;
     try {
       const update = () => {
         realm.removeAllListeners();
         console.log('set address');
-        resolve('');
+        resolve(newAddress);
       }        
       realm.addListener('change', update);
 
       realm.write(() => {
-        let newDaily = realm.objects('Daily').filtered(`id = ${dailyId}`)[0];
-        const newAddress = realm.create('Address', data)
-        newDaily.address = newAddress;
+        // let newDaily = realm.objects('Daily').filtered(`id = ${dailyId}`)[0];
+        newAddress = realm.create('Address', data)
+        daily.address = newAddress;
+        // newDaily.address = newAddress;
       })
     } catch (err) {
       reject(err);
