@@ -8,10 +8,11 @@ import Product from '../models/product';
 import Daily from '../models/daily';
 import Client from '../models/client';
 import Address from '../models/address';
+import Order from '../models/order';
 
 const getRealm = () => {
   return Realm.open({
-    schema: [Seller, Company, Commercial, Price, Product, Daily, Client, Address]
+    schema: [Seller, Company, Commercial, Price, Product, Daily, Client, Address, Order]
   })
 }
 

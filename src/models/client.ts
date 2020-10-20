@@ -1,4 +1,5 @@
 import Realm from 'realm';
+import Order from './order';
 
 export interface IClient {
   id: number
@@ -8,6 +9,7 @@ export interface IClient {
   name: string
   cpf_cnpj: string
   rg_ie: string | null
+  orders: Realm.List<Order>
 }
 
 class Client implements IClient {
@@ -18,6 +20,7 @@ class Client implements IClient {
   name: string
   cpf_cnpj: string
   rg_ie: string | null
+  orders: Realm.List<Order>
 
   public static schema: Realm.ObjectSchema = {
     name: 'Client',
@@ -30,6 +33,7 @@ class Client implements IClient {
       name: 'string',
       cpf_cnpj: 'string',
       rg_ie: { type: 'string', optional: true },
+      orders: 'Order[]',
       daily: {
         type: 'linkingObjects',
         objectType: 'Daily',

@@ -17,6 +17,7 @@ const synchronize = async (data: any) => {
     await clearAllData('Price');
     await clearAllData('Company');
     await clearAllData('Seller');
+    await clearAllData('Order');
 
     let newSeller = await setSellerData({
       id: seller.id,
@@ -65,6 +66,24 @@ const synchronize = async (data: any) => {
             cpf_cnpj: daily.client.cpf_cnpj,
             rg_ie: daily.client.rg_ie
           })
+
+          for (let order of daily.client.orders) {            
+            await setOrderData(newClient, {
+              id: order.id,
+              order_id: order.order_id,
+              type: order.type,
+              commercial_id: order.commercial_id,
+              client_id: order.client_id,
+              payment_id: order.payment_id,
+              installment_id: order.installment_id,
+              price_id: order.price_id,
+              obs: order.obs,
+              financy: order.financy,
+              total: parseFloat(order.total),
+              created_at: new Date(order.created_at),
+              updated_at: new Date(order.updated_at),
+            });
+          }
 
           let newAddress = await setAddressData(newDaily, {
             id: daily.address.id,
@@ -309,6 +328,27 @@ const setAddressData = (daily: any, data: {}) => {
         newAddress = realm.create('Address', data)
         daily.address = newAddress;
         // newDaily.address = newAddress;
+      })
+    } catch (err) {
+      reject(err);
+    }      
+  })
+}
+
+const setOrderData = (client: any, data: {}) => {
+  return new Promise(async (resolve, reject) => {
+    let newOrder;
+    try {
+      const update = () => {
+        realm.removeAllListeners();
+        console.log('set order');
+        resolve(newOrder);
+      }        
+      realm.addListener('change', update);
+
+      realm.write(() => {
+        newOrder = realm.create('Order', data)
+        client.orders.push(newOrder);
       })
     } catch (err) {
       reject(err);
