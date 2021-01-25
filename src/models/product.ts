@@ -9,7 +9,7 @@ export interface IProduct {
   price: number;
 }
 
-class Product implements IProduct {
+class Product extends Realm.objects implements IProduct {
   id: number
   product_id: number;
   name: string

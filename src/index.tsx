@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import DeviceInfo from 'react-native-device-info';
 import { View, Text, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
 
-import { ISeller } from './models/seller';
+import Seller from './models/seller';
 
-import SellerView from './components/SellerView';
 import synchronize from './services/synchronize'
 
 import api from './services/api';
+import Product from './models/product';
 
 const App: React.FC = () => {
-  const [sellers, setSellers] = useState<ISeller[]>([])
+  const [sellers, setSellers] = useState<Seller[]>()
+
+  const [products, setProducts] = useState<Product[]>()
+
   const uid = DeviceInfo.getUniqueId();
 
   const getData = async () => {
